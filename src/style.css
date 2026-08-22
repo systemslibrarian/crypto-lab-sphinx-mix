@@ -1,0 +1,462 @@
+/* Sphinx Mix — theme + component styles.
+   Dark is the only theme (:root). The always-dark shared top bar owns its own
+   styles in index.html; every base element rule here is scoped to #app so it
+   can never fight the bar. */
+
+:root {
+  color-scheme: dark;
+  --bg: #0b0e14;
+  --surface: #141a24;
+  --surface-2: #1b2330;
+  --border: #2c3644;
+  --control-border: #6a7583; /* >=3:1 against --surface (WCAG 1.4.11) */
+  --text: #e6ecf5;
+  --text-dim: #b6c0cf; /* muted via lower lightness, never opacity */
+  --accent: #a58cff; /* brand accent — also read by the shared header */
+  --accent-ink: #150a2e; /* text on an accent fill: 7.0:1 */
+  --ok: #46c98a;
+  --ok-text: #74e0ab;
+  --bad: #ff6b63;
+  --bad-text: #ff9a94;
+  --alarm: #f0a63c;
+  --alarm-text: #f6c274;
+  --info: #5cc8ff;
+  --radius: 10px;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  background-color: var(--bg); /* longhand — axe/WebKit miss the shorthand */
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.55;
+}
+
+#app {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 clamp(0.9rem, 3vw, 2rem) 3rem;
+}
+
+#app a {
+  color: var(--accent);
+  text-decoration: underline; /* persistent underline, not colour alone */
+  text-underline-offset: 2px;
+}
+#app code,
+#app .mono {
+  font-family: var(--mono);
+}
+#app :is(button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+#app p {
+  margin: 0 0 0.75rem;
+}
+/* WCAG 1.4.10 (Reflow). This page prints long unbreakable runs in ordinary
+   prose -- hex, and formulae like phi_i = (phi_{i-1} || 0_2k) XOR rho(...)[...]
+   -- and at 380px a single one of those pushes the whole document sideways.
+   `anywhere` rather than `break-word` because only `anywhere` also lowers the
+   element's min-content width, which is what the flex and grid minimums are
+   computed from. Ordinary words are unaffected: a break is still taken only
+   when the line cannot otherwise fit. */
+#app :is(p, li, dd, dt, td, th, code, summary) {
+  overflow-wrap: anywhere;
+}
+#app h2 {
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  margin: 0 0 0.5rem;
+}
+#app h3 {
+  font-size: 1.02rem;
+  margin: 1.25rem 0 0.4rem;
+}
+#app h4 {
+  font-size: 0.9rem;
+  margin: 0 0 0.35rem;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- hero (this lab owns it; fleet-consistent by review) ---------- */
+.cl-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:clamp(1rem,4vw,3rem);flex-wrap:wrap;margin:clamp(1rem,3vw,2rem) 0 1.5rem;}
+.cl-hero-main{flex:1 1 22rem;min-width:min(100%,20rem);}
+.cl-hero-title{margin:0;font-size:clamp(1.6rem,3.8vw,2.7rem);font-weight:700;line-height:1.1;letter-spacing:.01em;}
+.cl-hero-sub{margin:.4rem 0 0;font-size:clamp(.9rem,1.6vw,1.05rem);letter-spacing:.01em;color:var(--text-dim);}
+.cl-hero-desc{margin:.55rem 0 0;font-size:1rem;line-height:1.5;color:var(--text-dim);max-width:60ch;}
+.cl-hero-why{flex:0 1 min(40%,26rem);min-width:min(100%,15rem);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.05rem;background:color-mix(in oklab,var(--accent) 8%,var(--bg));}
+.cl-hero-why-label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.14em;color:var(--accent);}
+.cl-hero-why-text{margin:.35rem 0 0;font-size:.95rem;line-height:1.5;}
+@media (max-width:640px){.cl-hero{flex-direction:column;}.cl-hero-why{flex-basis:auto;width:100%;}}
+/* Reflow fix (WCAG 1.4.10), and it belongs beside the standard block rather
+   than inside it: the standard hero-main keeps a 20rem min-width that exceeds
+   a 320-380px viewport, and hero-why's width:100% plus padding overflows under
+   content-box sizing. Let both shrink to their column. */
+.cl-hero-why{box-sizing:border-box;}
+@media (max-width:640px){.cl-hero-main{min-width:0;flex-basis:auto;}}
+
+/* ---------- cards, callouts ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin: 0 0 1rem;
+}
+.card-tight { padding: 0.75rem 0.9rem; }
+
+.intro { margin: 0 0 1.25rem; }
+.intro p:last-child { margin-bottom: 0; }
+.intro strong { color: var(--text); }
+
+.callout {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.95rem;
+  margin: 0 0 1rem;
+  font-size: 0.94rem;
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout-scope {
+  border-color: color-mix(in oklab, var(--alarm) 42%, var(--border));
+  border-left-color: var(--alarm);
+  background: color-mix(in oklab, var(--alarm) 8%, var(--bg));
+}
+.callout-neg {
+  border-color: color-mix(in oklab, var(--info) 42%, var(--border));
+  border-left-color: var(--info);
+  background: color-mix(in oklab, var(--info) 8%, var(--bg));
+}
+.callout-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  margin-bottom: 0.3rem;
+}
+.callout-scope .callout-label { color: var(--alarm-text); }
+.callout-neg .callout-label { color: var(--info); }
+
+/* ---------- tabs ---------- */
+.tabs-nav { margin: 0 0 1rem; }
+.tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.tab-btn {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--control-border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tab-btn .tab-num {
+  font-family: var(--mono);
+  color: var(--text-dim);
+  margin-right: 0.35rem;
+}
+.tab-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+.tab-btn[aria-selected='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.tab-btn[aria-selected='true'] .tab-num { color: var(--accent-ink); }
+
+/* ---------- controls ---------- */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.9rem;
+  align-items: flex-end;
+  margin: 0 0 0.9rem;
+}
+.field { display: flex; flex-direction: column; gap: 0.25rem; }
+.field label, .field .field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+.btn {
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--control-border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn:hover:not(:disabled) { background: var(--surface); border-color: var(--accent); }
+.btn:disabled { color: var(--text-dim); border-color: var(--border); cursor: not-allowed; }
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--control-border);
+}
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 86%, white);
+  border-color: var(--text);
+  color: var(--accent-ink);
+}
+.btn-danger {
+  background: color-mix(in oklab, var(--bad) 18%, var(--surface));
+  border-color: var(--bad);
+  color: var(--bad-text);
+}
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--bad) 28%, var(--surface));
+  border-color: var(--bad-text);
+  color: var(--text);
+}
+input[type='number'], input[type='text'], select, textarea {
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--control-border);
+  background: var(--bg);
+  color: var(--text);
+}
+select {
+  appearance: none;
+  padding-right: 1.9rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-dim) 50%),
+    linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
+  background-position: calc(100% - 1.05rem) 55%, calc(100% - 0.7rem) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+input[type='range'] { accent-color: var(--accent); width: 11rem; }
+.slider-value { font-family: var(--mono); font-size: 0.85rem; color: var(--text); }
+
+/* ---------- verdicts and pills ---------- */
+.verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.8rem;
+  margin: 0.6rem 0;
+  font-size: 0.93rem;
+}
+.verdict-icon { font-family: var(--mono); font-weight: 700; flex: 0 0 auto; }
+.verdict-pass {
+  border-color: color-mix(in oklab, var(--ok) 45%, var(--border));
+  background: color-mix(in oklab, var(--ok) 10%, var(--bg));
+  color: var(--ok-text);
+}
+.verdict-fail {
+  border-color: color-mix(in oklab, var(--bad) 45%, var(--border));
+  background: color-mix(in oklab, var(--bad) 10%, var(--bg));
+  color: var(--bad-text);
+}
+.verdict-alarm {
+  border-color: color-mix(in oklab, var(--alarm) 50%, var(--border));
+  background: color-mix(in oklab, var(--alarm) 10%, var(--bg));
+  color: var(--alarm-text);
+}
+.verdict-info {
+  border-color: color-mix(in oklab, var(--info) 45%, var(--border));
+  background: color-mix(in oklab, var(--info) 10%, var(--bg));
+  color: var(--info);
+}
+.verdict strong { color: inherit; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--control-border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.pill-ok {
+  border-color: color-mix(in oklab, var(--ok) 55%, var(--border));
+  background: color-mix(in oklab, var(--ok) 14%, var(--bg));
+  color: var(--ok-text);
+}
+.pill-bad {
+  border-color: color-mix(in oklab, var(--bad) 55%, var(--border));
+  background: color-mix(in oklab, var(--bad) 14%, var(--bg));
+  color: var(--bad-text);
+}
+
+/* ---------- byte views ---------- */
+.hexblock {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  color: var(--text-dim);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  margin: 0.25rem 0 0;
+}
+.hexblock .hx-diff { color: var(--accent); }
+.hexblock .hx-same {
+  color: var(--bad-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 0.8rem; margin: 0.3rem 0 0; }
+.kv dt { font-size: 0.78rem; color: var(--text-dim); }
+.kv dd { margin: 0; font-family: var(--mono); font-size: 0.8rem; overflow-wrap: anywhere; }
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 0.8rem;
+}
+
+/* ---------- histogram ---------- */
+.histo {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 74px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 0.4rem;
+}
+.histo-bar { flex: 1 1 0; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; }
+
+/* ---------- meter ---------- */
+.meter {
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid var(--control-border);
+  background: var(--bg);
+  overflow: hidden;
+}
+.meter-fill { height: 100%; background: var(--accent); }
+.meter-fill-zero { background: var(--bad); }
+
+/* ---------- hop / path diagram ---------- */
+.hoprow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.45rem;
+  margin: 0.5rem 0 0.8rem;
+}
+.hopnode {
+  flex: 1 1 8rem;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.82rem;
+}
+.hopnode-title { font-weight: 700; display: block; }
+.hopnode-meta { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
+.hopnode-active { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 14%, var(--surface)); }
+.hopnode-dead { border-color: var(--bad); background: color-mix(in oklab, var(--bad) 14%, var(--surface)); }
+.hopnode-done { border-color: var(--ok); background: color-mix(in oklab, var(--ok) 12%, var(--surface)); }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.83rem; }
+caption { text-align: left; padding: 0.45rem 0.6rem; color: var(--text-dim); font-size: 0.8rem; }
+th, td { padding: 0.35rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
+th { font-weight: 700; color: var(--text); }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { font-family: var(--mono); text-align: right; }
+
+/* ---------- disclosure ---------- */
+details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 0.4rem 0.7rem;
+  margin: 0.6rem 0;
+}
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.15rem 0;
+}
+details[open] > summary { margin-bottom: 0.45rem; }
+details .detail-body { font-size: 0.92rem; }
+details .detail-body p:last-child { margin-bottom: 0; }
+
+/* ---------- learner check ---------- */
+.check-opts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.4rem 0; }
+.check-opt {
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--control-border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.check-opt:hover { border-color: var(--accent); background: var(--surface-2); }
+
+/* ---------- footer ---------- */
+.scripture-footer {
+  border-top: 1px solid var(--border);
+  margin: 2.5rem 0 0;
+  padding: 1rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.status-line { font-size: 0.85rem; color: var(--text-dim); margin: 0.3rem 0 0; }
+.tab-panel[hidden] { display: none; }
+.stack-note { font-size: 0.85rem; color: var(--text-dim); }
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; font-size: 0.78rem; color: var(--text-dim); margin: 0.4rem 0 0; }
+.legend-item { display: inline-flex; align-items: center; gap: 0.3rem; }
+.legend-swatch { width: 0.8rem; height: 0.8rem; border-radius: 3px; border: 1px solid var(--control-border); }
+
+/* Motion is only ever tied to a user action here; there is no idle animation
+   in this lab. The one transition is the tab/button hover repaint, and the
+   step reveal below. Under a reduced-motion preference both are cancelled and
+   the END STATE is what remains — never an element parked at opacity 0. */
+.reveal { animation: reveal 0.22s ease-out both; }
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app *, .cl-topbar * {
+    animation: none !important;
+    transition: none !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}

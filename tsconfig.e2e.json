@@ -1,0 +1,28 @@
+{
+  // The Playwright suite is typechecked too -- `playwright test` transpiles
+  // without checking, so a type error there would otherwise reach CI silently.
+  //
+  // It runs at `strict` but WITHOUT `noUncheckedIndexedAccess`, which src/ does
+  // use. The a11y oracles (`contrast.ts`, `nontext.ts`) are copied verbatim
+  // from crypto-lab-schnorr-forge -- the one lab verified clean on every known
+  // oracle defect -- and hand-patching 84 index sites inside a verified oracle
+  // to satisfy a stricter flag is exactly how a subtle measurement bug gets
+  // introduced. The lab's own crypto and UI keep the stricter setting.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "types": ["node"]
+  },
+  "include": ["e2e", "playwright.config.ts"]
+}
