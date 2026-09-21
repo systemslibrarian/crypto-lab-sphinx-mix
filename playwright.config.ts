@@ -18,7 +18,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'list' : [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:4646/crypto-lab-sphinx-mix/',
+    baseURL: 'http://localhost:4203/crypto-lab-sphinx-mix/',
     colorScheme: 'dark', // dark is the only theme
   },
   projects: [
@@ -33,7 +33,7 @@ export default defineConfig({
     // invalidates mutation checking, which is the only way we prove a test has
     // teeth. With the build in front a compile error aborts the run instead.
     command: 'npm run build && npm run preview -- --port 4646 --strictPort',
-    url: 'http://localhost:4646/crypto-lab-sphinx-mix/',
+    url: 'http://localhost:4203/crypto-lab-sphinx-mix/',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },
