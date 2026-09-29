@@ -32,7 +32,7 @@ export default defineConfig({
     // passes green against source that no longer compiles. That silently
     // invalidates mutation checking, which is the only way we prove a test has
     // teeth. With the build in front a compile error aborts the run instead.
-    command: 'npm run build && npm run preview -- --port 4646 --strictPort',
+    command: 'npm run build && npm run preview -- --port 4203 --strictPort',
     url: 'http://localhost:4203/crypto-lab-sphinx-mix/',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
