@@ -87,8 +87,7 @@ path length from one hop to five.
   a directory authority, key rotation, epoch handling, packet-size negotiation, or any
   persistence — mix keys are regenerated on every page load.
 
-**What this does NOT prove.** Sphinx provides bitwise unlinkability between a mix's input and
-its output, hidden path position, and tagging resistance. **It does not provide anonymity.**
+**What this does NOT prove.** The Hamming/histogram checks are diffusion and format regressions, not proofs of computational unlinkability. A public half-bit XOR mask passes such diagnostics while remaining perfectly linkable. The [PoPETs 2024 Sphinx analysis](https://petsymposium.org/popets/2024/popets-2024-0140.php) proves an adapted construction under GDH with explicit service/integrated and reply-path models. This forward-only lab does not automatically inherit that theorem or reproduce the reply/nymserver attack. **A packet format alone does not provide anonymity.**
 That comes from mixing and from traffic conditions the packet format cannot supply. The
 evidence is exhibit 6's first preset — one sender, immediate forwarding, every check green,
 anonymity-set entropy exactly 0 bits — and it is asserted as a test, not merely stated:
@@ -223,12 +222,7 @@ is on delivery and latency rather than on the entropy of an already-delivered pa
 job — defeating long-term intersection attacks by making a sender's output rate independent of
 whether it has anything to say — needs a multi-round model this one cannot show.
 
-**"Zero shared bytes" is not the unlinkability claim.** Two independent pseudorandom 176-byte
-strings agree at about 0.69 byte positions on average, and see at least one coincidence roughly
-half the time. A demo asserting zero shared bytes would teach something false, and a test
-asserting it would fail every other run. The claim that holds is that the bit-flip count is
-Binomial(8n, ½) — no correlation an adversary can exploit — and that is what is measured and
-tested.
+**Diffusion is not unlinkability.** Coincidentally matching bytes are normal, and Hamming distance and marginal histograms help catch gross regressions. They do not measure adversarial linking advantage. A fixed public XOR mask can produce half-bit changes and uniform marginals while being perfectly invertible; the regression suite includes this counterexample. Computational unlinkability needs a construction-specific model and proof, not a histogram threshold.
 
 ---
 
@@ -301,7 +295,7 @@ tests** driving the production build in Chromium.
 | Spec KATs | `src/sphinx/kat/kat.test.ts` (12 tests) | RFC 9496 App. A.1 — all 16 ristretto255 base-point multiples; RFC 9496 App. A.3 — 6 encodings a conforming decoder must reject; RFC 8439 App. A.1 blocks 0 and 1 and §2.4.2 encryption; RFC 4231 — all 7 HMAC-SHA-256 cases including the 128-bit truncation this lab's `γ` uses; FIPS 180-4 SHA-256/512 |
 | End-to-end | `src/sphinx/roundtrip.test.ts` | round-trip at every path length 1–5; the header identical in size at all of them; the identifier reaching only the exit; every mix deriving the secret the sender predicted; empty and maximum-length messages |
 | Failure paths | `src/sphinx/failures.test.ts` | all five failure codes reached through the real path, plus the MAC-before-replay ordering that stops a one-byte denial of service |
-| Unlinkability | `src/sphinx/unlinkability.test.ts` | Hamming distance within 6σ of `8n/2` for header, group element and payload; a χ² test on the output byte distribution; coincidental byte matches asserted as *expected*, not as a defect |
+| Diffusion/format diagnostics (not an unlinkability proof) | `src/sphinx/unlinkability.test.ts` | Hamming distance within 6σ of `8n/2` for header, group element and payload; a χ² test on the output byte distribution; coincidental byte matches asserted as *expected*, not as a defect |
 | LIONESS | `src/sphinx/lioness.test.ts` | permutation in both directions; one flipped bit randomising the whole 1024-byte block, at five positions; the stream-cipher contrast measured at exactly one bit |
 | Tagging | `src/sphinx/tagging.test.ts` | header flip caught at the next hop; payload flip caught by nobody and arriving destroyed; `γ` recomputed identically after a payload flip, which is the asymmetry made measurable |
 | Traffic | `src/sphinx/traffic.test.ts` | the entropy arithmetic; NEG-1 as an executable fixture; the log₂(senders) ceiling; a bigger pool never lowering entropy; cover traffic filling pools that would otherwise strand packets |

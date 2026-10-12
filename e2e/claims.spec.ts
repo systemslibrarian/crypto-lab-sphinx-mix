@@ -479,3 +479,8 @@ test.describe('the page tells the truth', () => {
     expect(leaks).toEqual([]);
   });
 });
+
+test('research boundary is visible in the rendered lesson',async({page})=>{
+ await page.goto('./');
+ await page.locator('#tab-peel').click(); await page.locator('#peel-step').click(); await expect(page.locator('#peel-out')).toContainText('diffusion/format diagnostics only'); await expect(page.locator('#peel-out')).toContainText('forward-only'); await expect(page.locator('#peel-out')).not.toContainText('the claim it supports');
+});

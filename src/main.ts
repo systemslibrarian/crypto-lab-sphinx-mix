@@ -109,7 +109,7 @@ function negativeClaim(): HTMLElement {
     }),
     el('p', {
       text:
-        'The evidence is act 6’s first preset: one sender, immediate forwarding. Every MAC verifies, every header is unlinkable, every payload is unmarkable — and the anonymity-set entropy is exactly 0 bits, so an observer holding no keys traces every packet from end to end. A correct implementation of a correct format, offering no anonymity at all.',
+        'The evidence is act 6’s first preset: one sender, immediate forwarding. Every MAC verifies and the packet diagnostics pass — and the anonymity-set entropy is exactly 0 bits, so an observer holding no keys traces every packet from end to end. Passing packet checks, yet no anonymity in this traffic model.',
     }),
   ]);
 }

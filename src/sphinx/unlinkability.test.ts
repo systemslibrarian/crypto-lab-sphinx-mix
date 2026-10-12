@@ -5,16 +5,8 @@ import { byteHistogram, hammingDistance, sharedByteCount, toHex } from './bytes'
 import { BETA_LEN, ALPHA_LEN, PAYLOAD_LEN } from './params';
 import { clonePacket } from './packet';
 
-/**
- * Bitwise unlinkability, measured the honest way.
- *
- * The claim is NOT "the input and output share no bytes". Two independent
- * pseudorandom 176-byte strings agree at about 0.69 positions on average, and
- * a test asserting zero shared bytes would fail roughly half the time while
- * also teaching something false. The claim that holds is that the bit-flip
- * count is Binomial(8n, 1/2): no correlation an adversary can use.
- */
-describe('bitwise unlinkability at a mix', () => {
+/** Diffusion and format regression diagnostics. These do not prove unlinkability. */
+describe('diffusion and format diagnostics at a mix', () => {
   const window = (bits: number): [number, number] => {
     const sigma = Math.sqrt(bits) / 2;
     return [bits / 2 - 6 * sigma, bits / 2 + 6 * sigma];
@@ -82,7 +74,7 @@ describe('bitwise unlinkability at a mix', () => {
     expect(totalShared).toBeLessThan(expected + 5 * Math.sqrt(expected));
   });
 
-  it('the output byte distribution is flat — no structure survives the hop', () => {
+  it('the marginal output byte histogram passes a bounded regression diagnostic', () => {
     const net = createNetwork();
     const counts = new Array<number>(16).fill(0);
     for (let i = 0; i < 40; i++) {
@@ -105,7 +97,7 @@ describe('bitwise unlinkability at a mix', () => {
     expect(new Set(s).size).toBe(3);
   });
 
-  it('nothing a mix sees reveals its position on the path', () => {
+  it('packet field lengths do not expose hop position', () => {
     // The only length signal would be the header, and it is the same size at
     // every hop; the only position signal would be alpha, and it is a fresh
     // uniform group element at every hop.
@@ -128,4 +120,12 @@ describe('bitwise unlinkability at a mix', () => {
     expect(toHex(copy.header.beta)).toBe(toHex(built.packet.header.beta));
     expect(toHex(copy.payload)).toBe(toHex(built.packet.payload));
   });
+});
+
+it('a perfectly linkable control passes half-bit and marginal-histogram diagnostics',()=>{
+ const x=Uint8Array.from({length:256},(_,i)=>i);
+ const y=x.map(b=>b^0x0f);
+ expect(hammingDistance(x,y)).toBe(x.length*4);
+ expect(byteHistogram(y)).toEqual(byteHistogram(x));
+ expect(y.map(b=>b^0x0f)).toEqual(x); // public inverse links perfectly
 });

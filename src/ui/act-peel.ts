@@ -170,7 +170,7 @@ export function renderPeel(root: HTMLElement): void {
         ]),
         el('span', { class: 'legend-item' }, [
           el('span', { class: 'legend-swatch', style: 'background:var(--bad)', 'aria-hidden': 'true' }),
-          'byte unchanged (underlined) — coincidence, not structure',
+          'byte unchanged (underlined) — a diagnostic, not a linking test',
         ]),
       ])
     );
@@ -193,7 +193,7 @@ export function renderPeel(root: HTMLElement): void {
     panel.append(
       el('p', {
         class: 'status-line',
-        text: `Every bin holds about ${(BETA_LEN / 16).toFixed(0)} bytes. A single χ² sample above 25.0 happens one time in twenty by chance, so this number is context, not a pass/fail light — the claim it supports is "no exploitable correlation", which is a statement about distributions, not about one draw.`,
+        text: `Every bin holds about ${(BETA_LEN / 16).toFixed(0)} bytes in the uniform reference model. Hamming distance and this marginal histogram are diffusion/format diagnostics only: they cannot establish computational unlinkability or rule out exploitable correlation.`,
       })
     );
     panel.append(
@@ -202,10 +202,12 @@ export function renderPeel(root: HTMLElement): void {
           text: `Because it is false. Two independent pseudorandom strings agree at any given byte position with probability 1/256, so over ${BETA_LEN} bytes you expect ${expectedShared.toFixed(2)} coincidental matches and see at least one about half the time. A demo that asserted zero shared bytes would be teaching a claim that is wrong, and a test that asserted it would fail roughly every other run.`,
         }),
         el('p', {
-          text: 'Bitwise unlinkability means an adversary gains no advantage in linking the input to the output — the two are computationally indistinguishable from independent uniform strings. It does not mean they differ everywhere.',
+          text: 'Computational unlinkability concerns adversarial linking advantage under a specified model and assumptions; these measurements do not prove it. A public fixed XOR mask with half its bits set changes half the bits and preserves uniform marginals, yet is perfectly invertible and linkable.',
         }),
       ])
     );
+    panel.append(el('p', { text: 'Research scope: PoPETs 2024(4), Scherer–Weis–Strufe, proves an adapted Sphinx construction under Gap Diffie–Hellman (GDH), distinguishing service and integrated models and reply/nymserver handling. This lab is forward-only; it neither inherits that theorem automatically nor demonstrates the paper’s reply-path attack.' }));
+    panel.append(el('a', { href: 'https://petsymposium.org/popets/2024/popets-2024-0140.php', text: '2024 Sphinx analysis and construction' }));
     out.append(panel);
 
     if (hop === PATH.length - 1) {
