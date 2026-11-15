@@ -292,7 +292,7 @@ tests** driving the production build in Chromium.
 
 | Suite | File | Covers |
 |---|---|---|
-| Spec KATs | `src/sphinx/kat/kat.test.ts` (12 tests) | RFC 9496 App. A.1 — all 16 ristretto255 base-point multiples; RFC 9496 App. A.3 — 6 encodings a conforming decoder must reject; RFC 8439 App. A.1 blocks 0 and 1 and §2.4.2 encryption; RFC 4231 — all 7 HMAC-SHA-256 cases including the 128-bit truncation this lab's `γ` uses; FIPS 180-4 SHA-256/512 |
+| Spec KATs | `src/sphinx/kat/kat.test.ts` (12 tests) | RFC 9496 App. A.1 — all 16 ristretto255 base-point multiples; RFC 9496 App. A.2 — 6 encodings a conforming decoder must reject; RFC 8439 App. A.1 blocks 0 and 1 and §2.4.2 encryption; RFC 4231 — all 7 HMAC-SHA-256 cases including the 128-bit truncation this lab's `γ` uses; FIPS 180-4 SHA-256/512 |
 | End-to-end | `src/sphinx/roundtrip.test.ts` | round-trip at every path length 1–5; the header identical in size at all of them; the identifier reaching only the exit; every mix deriving the secret the sender predicted; empty and maximum-length messages |
 | Failure paths | `src/sphinx/failures.test.ts` | all five failure codes reached through the real path, plus the MAC-before-replay ordering that stops a one-byte denial of service |
 | Diffusion/format diagnostics (not an unlinkability proof) | `src/sphinx/unlinkability.test.ts` | Hamming distance within 6σ of `8n/2` for header, group element and payload; a χ² test on the output byte distribution; coincidental byte matches asserted as *expected*, not as a defect |
@@ -308,6 +308,12 @@ assembled from, at the exact call sites this lab uses — through `mulBase`, `rh
 wrappers would still pass if the library were wired up wrong. The Sphinx layer above them is
 covered by round-trip, failure-path and statistical property tests. Calling those KATs would be
 claiming external validation this construction does not have.
+
+**Citations checked 15 November 2026:** the six rejected encodings are from
+[RFC 9496 Appendix A.2, "Invalid Encodings"](https://www.rfc-editor.org/rfc/rfc9496.html#appendix-A.2)
+— the first four non-canonical field encodings and the first two negative field elements it
+lists. Appendix A.3 is "Group Elements from Uniform Byte Strings", a different table, and an
+earlier revision of this README and the KAT comments cited it by mistake.
 
 The accessibility gate is not the retired fleet template: it sets `reducedMotion` through
 `emulateMedia` and asserts from inside the page that it took effect, injects nothing, opens every

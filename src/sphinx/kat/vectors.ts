@@ -12,7 +12,7 @@
  *
  * Sources:
  *   RFC 9496 App. A.1  -- ristretto255 encodings of small base-point multiples
- *   RFC 9496 App. A.3  -- encodings that MUST be rejected
+ *   RFC 9496 App. A.2  -- encodings that MUST be rejected
  *   RFC 8439 App. A.1  -- ChaCha20 block function
  *   RFC 8439 §2.4.2    -- ChaCha20 encryption
  *   RFC 4231 §4        -- HMAC-SHA-256
@@ -40,7 +40,7 @@ export const RISTRETTO_BASE_MULTIPLES: string[] = [
 ];
 
 /**
- * RFC 9496 Appendix A.3 — a subset of the encodings a conforming decoder MUST
+ * RFC 9496 Appendix A.2 — a subset of the encodings a conforming decoder MUST
  * reject. This lab decodes `alpha` on every hop, so these are the exact
  * strings an adversary would try.
  */

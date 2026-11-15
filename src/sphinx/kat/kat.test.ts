@@ -48,7 +48,7 @@ describe('KAT — ristretto255 (RFC 9496 Appendix A.1)', () => {
   });
 });
 
-describe('KAT — ristretto255 rejected encodings (RFC 9496 Appendix A.3)', () => {
+describe('KAT — ristretto255 rejected encodings (RFC 9496 Appendix A.2)', () => {
   it('every listed bad encoding is refused as MALFORMED_HEADER', () => {
     expect(RISTRETTO_BAD_ENCODINGS.length).toBeGreaterThan(0);
     for (const { hex, why } of RISTRETTO_BAD_ENCODINGS) {
