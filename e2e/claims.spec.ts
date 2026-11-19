@@ -556,6 +556,26 @@ test.describe('the page tells the truth', () => {
     await expect(page.locator('#leak-out .verdict-alarm')).toContainText(`padding: ${MAX_HOPS}.`);
   });
 
+  /**
+   * The "partially" disclosure explains the paper's title. The title says
+   * "(Partially)" because Kuhn, Beck and Strufe re-prove their fix for ONE
+   * protocol of the family (abstract: "showing our improved properties for one
+   * protocol, thus partially fixing the family"), NOT because random padding
+   * fails to stop payload tagging — Sphinx answers tagging separately. The old
+   * misattribution ("the paper's title says 'partially' for that reason", after
+   * the marked-payload clause) must not return.
+   */
+  test('the “partially” disclosure gives the paper’s real reason, not the tagging one', async ({ page }) => {
+    await boot(page);
+    await openAct(page, /Path length leak/, '#panel-leak');
+    // textContent includes the collapsed <details> body.
+    const panel = (await page.locator('#panel-leak').textContent()) ?? '';
+    expect(panel).toContain('one protocol');
+    expect(panel).toContain('partially fixing the family');
+    expect(panel).not.toMatch(/says\s*[“"]partially[”"]\s*for that reason/);
+    expect(panel).not.toContain('needs the payload’s integrity to be checked at every hop');
+  });
+
   test('many packets: every length recovered under zero padding, chance under random, all delivered', async ({ page }) => {
     await boot(page);
     await openAct(page, /Path length leak/, '#panel-leak');

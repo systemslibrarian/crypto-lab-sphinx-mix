@@ -370,7 +370,7 @@ export function renderLeak(root: HTMLElement): void {
   }
 
   root.append(
-    disclosure('What the fix costs, and why “partially”', [
+    disclosure('What the fix costs, and what “partially” means', [
       el('p', {
         text: `Nothing reads the padding. The exit takes END and the identifier from the first ${2 * KAPPA} bytes and ignores the rest, and the header MAC is computed over the block whatever it holds, so swapping zeros for random bytes changes no length, no check and no key. The paper’s corrected construction is the original “except that we consider the 0-bit string for padding β[ν−1] replaced by random bits to prevent the known attack”.`,
       }),
@@ -378,7 +378,7 @@ export function renderLeak(root: HTMLElement): void {
         text: 'The paper states the attack as a lower bound — the exit “observes (after XORing) where the first 1 bit after the identifier is” and “knows that the filler string starts there or earlier” — because the filler could begin with a zero by coincidence. This panel counts in whole κ-byte blocks, so a stray zero byte at the head of the filler never moves the answer; being wrong would take sixteen of them in a row.',
       }),
       el('p', {
-        text: 'Random padding closes this one leak. It does nothing for the marked-payload attack above, which needs the payload’s integrity to be checked at every hop, and the paper’s title says “partially” for that reason. The original design is still what the other six acts build, because it is the paper this lab implements.',
+        text: 'Random padding closes this one leak — the exit mix can no longer read the path length. That is a different concern from payload tagging, which Sphinx answers separately with its wide-block payload (act 5). And the paper’s title says “partially” for a different reason still: Kuhn, Beck and Strufe re-prove their corrected security properties for only one protocol, as a demonstration, leaving the rest of the provably-secure onion-routing family unproven — the abstract’s “showing our improved properties for one protocol, thus partially fixing the family”. The original design is still what the other six acts build, because it is the paper this lab implements.',
       }),
     ])
   );
