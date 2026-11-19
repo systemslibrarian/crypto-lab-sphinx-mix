@@ -65,6 +65,14 @@ export interface HopTrace {
   payloadOut: Uint8Array | null;
   /** The kappa bytes the routing block named: a mix id, or the end marker. */
   routedTo: Uint8Array | null;
+  /**
+   * The routing block as this mix decrypted it: the first |beta| bytes of
+   * (beta || 0_2k) XOR rho(h_rho(s)). At a forwarding hop that is the next
+   * hop's id, its MAC and the head of its routing block. At the exit it is
+   * END || I || pad || (filler under this hop's keystream) -- and the pad is
+   * exactly what `pathleak.ts` reads the path length off.
+   */
+  betaPlain: Uint8Array | null;
 }
 
 export type MixResult =
@@ -133,6 +141,7 @@ export function processPacket(
     gammaOut: null,
     payloadOut: null,
     routedTo: null,
+    betaPlain: null,
   };
 
   if (!macOk) {
@@ -158,6 +167,7 @@ export function processPacket(
   const unwrapped = xor(concat(header.beta, zeros(2 * KAPPA)), stream);
   const routedTo = unwrapped.subarray(0, KAPPA);
   trace.routedTo = Uint8Array.from(routedTo);
+  trace.betaPlain = Uint8Array.from(unwrapped.subarray(0, BETA_LEN));
 
   const payloadOut = lionessDecrypt(hPi(secretBytes), packet.payload);
   trace.payloadOut = payloadOut;

@@ -14,7 +14,7 @@ import {
  *
  * The lab is driven along everything it teaches: the arrival state, where act
  * 1 has built a real packet and parked its stepper at zero while the other
- * five acts are hidden and UNRENDERED; the shared skip link focused; the
+ * six acts are hidden and UNRENDERED; the shared skip link focused; the
  * learner check and both page-level disclosures opened through their
  * summaries, answered wrong and then right; the header builder stepped to its
  * end and back; the Peel act's measurement panel with its per-byte hex diff
@@ -25,7 +25,10 @@ import {
  * cleared; the tagging act's dead hop beside its all-green-but-corrupted
  * counterpart, at two different byte offsets; act 6 in both of its presets --
  * the all-green fully-traced ALARM and the ambiguous pool-mix state -- each
- * built from real Sphinx packets; three hover states; and three focus rings.
+ * built from real Sphinx packets; act 7's path-length leak under zero padding
+ * at three and one hops, the random-padding state with nothing to count, its
+ * trial table, the marked-payload table and its disclosure; three hover
+ * states; and four focus rings.
  * Every one of those states is scanned, at desktop and phone width.
  *
  * See `gate.ts` for why nothing is injected into the page (the retired

@@ -10,7 +10,7 @@
  * teaching lab; the whole point is that the learner can see s_i, b_i, phi_i
  * and each beta_i, which a production implementation would keep to itself.
  */
-import { concat, xor, zeros } from './bytes';
+import { concat, randomBytes, xor, zeros } from './bytes';
 import { SphinxError } from './errors';
 import {
   deriveBlinding,
@@ -112,9 +112,13 @@ export function deriveChain(path: NodeRef[]): {
  * of its own keystream to the back. The filler is the sender computing, in
  * advance, exactly what those appended bytes will be at every hop, so it can
  * lay them into the innermost block. The last mix therefore sees a full-length
- * routing block of which most is keystream it generated itself several hops
- * earlier -- indistinguishable, to it, from instructions for hops that do not
- * exist.
+ * routing block whose tail is filler -- pseudorandom to it, because it is
+ * keyed by the EARLIER hops' secrets, which the last mix does not hold.
+ *
+ * That is a statement about the filler only. The pad between the identifier
+ * and the filler is a different matter: in the original design it is zeros,
+ * the last mix sees them, and their count gives away the path length. See
+ * `TailPad` below and `pathleak.ts`.
  *
  *   phi_0 = empty
  *   phi_i = (phi_{i-1} || 0_{2*kappa}) XOR rho(h_rho(s_{i-1}))[(2(r-i)+3)k .. (2r+3)k]
@@ -138,13 +142,47 @@ export function buildFillers(secrets: Uint8Array[]): Uint8Array[] {
 }
 
 /**
+ * What the sender writes into the unused tail of the innermost routing block.
+ *
+ *  - `'zero'`   -- the original Sphinx design (Danezis & Goldberg 2009): the
+ *                  pad is all zero bytes. The last mix decrypts the block and
+ *                  SEES that run of zeros, and its length is
+ *                  (2(r - nu) + 1) * kappa -- so the exit learns nu, the
+ *                  length of the path. Kuhn, Beck and Strufe, "Breaking and
+ *                  (Partially) Fixing Provably Secure Onion Routing"
+ *                  (arXiv:1910.13772): "The exit node hence can learn the
+ *                  length of the chosen path".
+ *  - `'random'` -- the fix that paper proposes: fill the pad with random
+ *                  bytes. Nothing reads the pad, the MAC covers whatever is
+ *                  there, and the exit can no longer tell where the pad stops
+ *                  and the filler starts.
+ *
+ * `'zero'` is the default because it is what the paper this lab implements
+ * specifies; `src/sphinx/pathleak.ts` and act 7 measure the difference.
+ */
+export type TailPad = 'zero' | 'random';
+
+export interface HeaderOptions {
+  tailPad?: TailPad;
+}
+
+/** Length in bytes of the pad after (END || I) in the innermost block of a nu-hop path. */
+export function tailPadLength(nu: number): number {
+  return (2 * (MAX_HOPS - nu) + 1) * KAPPA;
+}
+
+/**
  * Build (alpha_0, beta_0, gamma_0) for `path`, carrying `identifier`.
  *
  * `identifier` is the paper's `I`: kappa bytes the exit hands to the recipient
  * alongside the payload. It never leaves the innermost routing block, so no
  * mix but the last one ever sees it.
  */
-export function createHeader(path: NodeRef[], identifier: Uint8Array): HeaderBuild {
+export function createHeader(
+  path: NodeRef[],
+  identifier: Uint8Array,
+  options: HeaderOptions = {}
+): HeaderBuild {
   if (identifier.length !== KAPPA) {
     throw new SphinxError('MALFORMED_HEADER', `identifier must be ${KAPPA} bytes`);
   }
@@ -158,9 +196,12 @@ export function createHeader(path: NodeRef[], identifier: Uint8Array): HeaderBui
   const fillers = buildFillers(secrets);
 
   // --- the innermost block, for the last mix -----------------------------
-  // (END || I || zero pad) XOR the head of the last hop's keystream, then the
+  // (END || I || pad) XOR the head of the last hop's keystream, then the
   // filler, which is already exactly what the earlier hops will have appended.
-  const tailPad = zeros((2 * (MAX_HOPS - nu) + 1) * KAPPA);
+  // The pad is ZERO in the original design, and the last mix can count it --
+  // see `TailPad` above.
+  const tailPad =
+    options.tailPad === 'random' ? randomBytes(tailPadLength(nu)) : zeros(tailPadLength(nu));
   const inner = concat(END_MARKER, identifier, tailPad);
   const innerStream = rho(hRho(secrets[nu - 1]!), RHO_LEN).subarray(
     0,

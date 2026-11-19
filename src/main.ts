@@ -2,7 +2,7 @@
  * Sphinx Mix — page shell.
  *
  * Builds the hero, the plain-language on-ramp, the honest-scoping notice, the
- * six acts, the negative claim and the failure-code reference. Panels render
+ * seven acts, the negative claim and the failure-code reference. Panels render
  * LAZILY on first activation; a tab that has never been clicked holds an empty
  * container, which is deliberate — it keeps first paint cheap and it is what
  * the accessibility gate drives through.
@@ -15,6 +15,7 @@ import { renderLength } from './ui/act-length';
 import { renderReplay } from './ui/act-replay';
 import { renderTagging } from './ui/act-tagging';
 import { renderTiming } from './ui/act-timing';
+import { renderLeak } from './ui/act-leak';
 import { FAILURE_CODES, FAILURE_TEXT } from './sphinx/errors';
 import { HEADER_LEN, KAPPA, MAX_HOPS, PACKET_LEN, PAYLOAD_LEN } from './sphinx/params';
 
@@ -25,10 +26,11 @@ interface Act {
   render: (root: HTMLElement) => void;
 }
 
-// [extension] point -- a seventh act (an active n-1 flooding attack, or a
+// [extension] point -- a further act (an active n-1 flooding attack, or a
 // Loopix-style multi-round intersection attack) is one entry here plus one
-// module in src/ui/. The tab machinery, the lazy render and the a11y drive all
-// key off this array, so nothing else needs to change.
+// module in src/ui/. The tab machinery and the lazy render key off this
+// array; the a11y drive in e2e/gate.ts names each act and must be extended
+// by hand, which is deliberate -- an act nobody drove is an act nobody scanned.
 const ACTS: Act[] = [
   { id: 'build', num: '1', label: 'Build a path', render: renderBuild },
   { id: 'peel', num: '2', label: 'Peel', render: renderPeel },
@@ -36,6 +38,7 @@ const ACTS: Act[] = [
   { id: 'replay', num: '4', label: 'Replay', render: renderReplay },
   { id: 'tagging', num: '5', label: 'Tagging', render: renderTagging },
   { id: 'timing', num: '6', label: 'Timing correlation', render: renderTiming },
+  { id: 'leak', num: '7', label: 'Path length leak', render: renderLeak },
 ];
 
 function hero(): HTMLElement {
@@ -106,6 +109,10 @@ function negativeClaim(): HTMLElement {
     el('p', {
       text:
         'Sphinx provides bitwise unlinkability between a mix’s input and its output, hidden path position, and tagging resistance. It does not provide anonymity. Anonymity comes from mixing and from traffic conditions the packet format cannot supply.',
+    }),
+    el('p', {
+      text:
+        'Two of those three have a published limit, and act 7 runs both. Position is hidden from the mixes in the middle, but in the original design the last mix can count its zero padding and learn how long the path was; and a payload an adversary cannot mark recognisably can still be destroyed, which the far end notices (Kuhn, Beck and Strufe, arXiv:1910.13772).',
     }),
     el('p', {
       text:

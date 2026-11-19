@@ -39,7 +39,7 @@ export const REFLOW = { width: 280, height: 800 };
  *
  *  2. IT FORCED EVERY PANEL VISIBLE FROM SCRIPT. The old drive stripped every
  *     `[hidden]` attribute and set every `<details>.open` by JS before its only
- *     scan. Stripping `hidden` puts all six act panels on screen AT ONCE — a
+ *     scan. Stripping `hidden` puts all seven act panels on screen AT ONCE — a
  *     rendering no reader can reach and axe then scans instead of the real one
  *     — and script-opening the disclosures means the SHUT state, which is what
  *     every reader arrives at, was never scanned at all. This gate switches
@@ -167,7 +167,7 @@ async function expectNotBlank(page: Page, label: string): Promise<void> {
 
 /**
  * Uncaught page errors and console errors, collected from the moment the page
- * is created. Five of the six panels here render synchronously at first
+ * is created. Six of the seven panels here render synchronously at first
  * activation, so a renderer that throws leaves that tabpanel EMPTY — and an
  * empty region is exactly what a scan reports as perfectly accessible. The
  * sixth, act 6, builds real Sphinx packets asynchronously, so a throw there
@@ -292,7 +292,7 @@ export async function boot(page: Page, theme: 'dark'): Promise<void> {
   // -- The page really rendered -------------------------------------------
   await expect(page.locator('main')).toHaveCount(1);
   await expect(page.locator('h1')).toHaveCount(1);
-  await expect(page.locator('.tab-btn')).toHaveCount(6);
+  await expect(page.locator('.tab-btn')).toHaveCount(7);
 
   // The shared skip link points at an id that exists. axe's skip-link rule is
   // best-practice, not WCAG-tagged, so `withTags` never runs it -- a skip link
@@ -310,16 +310,16 @@ export async function boot(page: Page, theme: 'dark'): Promise<void> {
     page.locator('#theme-toggle, #themeToggle, .theme-toggle, .theme-toggle-btn, [data-theme-toggle]')
   ).toHaveCount(0);
 
-  // -- The arrival state: act 1 active, five acts unrendered ---------------
+  // -- The arrival state: act 1 active, six acts unrendered ----------------
   // `renderBuild` builds a real packet at mount and parks the stepper at step
-  // 0. The other five panels are lazily rendered: hidden AND EMPTY until their
+  // 0. The other six panels are lazily rendered: hidden AND EMPTY until their
   // tab is first activated -- asserted, because "empty" is this lab's tell
   // that a renderer threw (see `watchPageErrors`).
   await expect(page.locator('#build-progress')).toHaveText('Step 0 / 3');
   await expect(page.locator('#panel-build .hopnode')).toHaveCount(3);
   await expect(page.locator('#panel-build .verdict-info')).toContainText('Nothing is wrapped yet');
   await expect(page.getByRole('button', { name: '‹ Back' })).toBeDisabled();
-  for (const id of ['peel', 'length', 'replay', 'tagging', 'timing']) {
+  for (const id of ['peel', 'length', 'replay', 'tagging', 'timing', 'leak']) {
     await expect(page.locator(`#panel-${id}`)).toBeHidden();
     await expect(page.locator(`#panel-${id}`)).toBeEmpty();
   }
@@ -434,7 +434,7 @@ export async function expectScrollersReachable(page: Page, label: string): Promi
  * DO remove an element from the tab order, so those are skipped rather than
  * flagged — the failure is specifically the invisible-but-tabbable pair. The
  * `hidden` act panels here take the `display: none` route
- * (`.tab-panel[hidden] { display: none }`), which is why five acts' worth of
+ * (`.tab-panel[hidden] { display: none }`), which is why six acts' worth of
  * buttons are legitimately absent from the tab order.
  *
  * Off-screen-but-focusable is the WCAG-sanctioned skip-link idiom and is
@@ -735,12 +735,12 @@ async function openDisclosure(page: Page, summaryText: RegExp): Promise<void> {
  * Five things shape this drive:
  *
  *  - THE ARRIVAL STATE IS SCANNED FIRST, exactly as a reader gets it: act 1
- *    active with its stepper at zero, five acts hidden and unrendered, every
+ *    active with its stepper at zero, six acts hidden and unrendered, every
  *    disclosure shut. The retired template gate force-revealed all of it
  *    before its only scan.
  *
  *  - EVERY ACT IS RENDERED LAZILY, so a tab that is never clicked is a panel
- *    that is never even IN the DOM. Each of the six is activated through its
+ *    that is never even IN the DOM. Each of the seven is activated through its
  *    real tab button and scanned in its own driven states.
  *
  *  - EVERY FAILURE STATE. A packet that dies at a hop repaints that hop
@@ -763,7 +763,7 @@ async function openDisclosure(page: Page, summaryText: RegExp): Promise<void> {
 export async function driveAllStates(page: Page, theme: string): Promise<void> {
   const scanAt = (s: string): Promise<void> => scan(page, `${theme} / ${s}`);
 
-  await scanAt('arrival: act 1 at step 0, five acts unrendered, disclosures shut');
+  await scanAt('arrival: act 1 at step 0, six acts unrendered, disclosures shut');
 
   // -- The shared skip link, focused ---------------------------------------
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
@@ -923,6 +923,49 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await page.getByRole('button', { name: /one sender, immediate/ }).click();
   await expect(page.locator('#panel-timing .verdict-alarm')).toBeVisible({ timeout: 120_000 });
   await scanAt('Timing: back to the negative claim’s own fixture');
+
+  // -- Act 7: Path length leak ---------------------------------------------
+  // Mounts with one real three-hop packet under ZERO padding: the alarm
+  // state, with the exit's decrypted block and its underlined run of zeros.
+  await openTab(page, /Path length leak/, '#panel-leak');
+  await expect(page.locator('#leak-out .verdict-pass')).toContainText('Delivered');
+  await expect(page.locator('#leak-out .verdict-alarm')).toContainText('read the path length off the padding: 3');
+  await expect(page.locator('#leak-out .hopnode')).toHaveCount(3);
+  await scanAt('Leak: zero padding, three hops — the exit counts the run');
+
+  await page.selectOption('#leak-hops', '1');
+  await expect(page.locator('#leak-out .hopnode')).toHaveCount(1);
+  await expect(page.locator('#leak-out .verdict-alarm')).toContainText('padding: 1');
+  await scanAt('Leak: zero padding, one hop — the longest run, no filler');
+
+  await page.selectOption('#leak-hops', '5');
+  await page.selectOption('#leak-pad', 'random');
+  await expect(page.locator('#leak-out .hopnode')).toHaveCount(5);
+  await expect(page.locator('#leak-out .verdict-pass').last()).toContainText('No run to count');
+  await expect(page.locator('#leak-out .verdict-alarm')).toHaveCount(0);
+  await scanAt('Leak: random padding, five hops — delivered, nothing to count');
+
+  await page.getByRole('button', { name: /Run \d+ packets in each mode/ }).click();
+  await expect(page.locator('#leak-trials-table')).toBeVisible({ timeout: 120_000 });
+  await expect(page.locator('#leak-trials-out .verdict-alarm')).toContainText('Zero padding');
+  await expect(page.locator('#leak-trials-out .verdict-pass')).toContainText('Random padding');
+  await scanAt('Leak: the trial table — every length recovered beside chance, button still hovered');
+
+  await page.getByRole('button', { name: 'Mark it and deliver all three' }).click();
+  await expect(page.locator('#leak-tag-table tbody tr')).toHaveCount(3);
+  await expect(page.locator('#leak-tag-out .verdict-alarm')).toContainText('Exactly one arrival failed its check');
+  await scanAt('Leak: one marked payload — the single failed integrity check');
+
+  await openDisclosure(page, /What the fix costs/);
+  await scanAt('Leak: the fix-cost disclosure open');
+
+  await page.locator('#leak-pad').focus();
+  await expect(page.locator('#leak-pad')).toBeFocused();
+  await scanAt('Leak: the padding select focused');
+
+  // Back to act 6 for the hover and focus states below, which name its controls.
+  await openTab(page, /Timing correlation/, '#panel-timing');
+  await expect(page.locator('#panel-timing .meter')).toBeVisible({ timeout: 90_000 });
 
   // -- Hover, which persists after a click ----------------------------------
   await page.getByRole('button', { name: 'Run the network' }).hover();

@@ -122,6 +122,17 @@ anonymity-set entropy exactly 0 bits — and it is asserted as a test, not merel
    to end. Add senders, add cover traffic, switch to a pool mix, and watch the anonymity-set
    entropy meter climb toward its ceiling of log₂(senders).
 
+7. **Path length leak** — What the last mix can count. In the original design the unused tail
+   of the innermost routing block is zero padding; the exit decrypts its block, counts the run
+   of zeros after the identifier, and has the path length (Kuhn, Beck and Strufe, "Breaking and
+   (Partially) Fixing Provably Secure Onion Routing", arXiv:1910.13772, §IV-A: "The exit node
+   hence can learn the length of the chosen path"). Build a real packet at any length from one
+   to five, read the run off the decrypted block, then switch the padding to random bytes — the
+   paper's fix — and watch the run disappear while delivery stays exactly as it was. A trial
+   run builds 100 packets in each mode: every length recovered under zero padding, a 1-in-5
+   guess under random. A second card runs the same paper's payload attack: one marked packet
+   among three, every MAC green, exactly one failed integrity check at the far end.
+
 Plus, on the page itself: a plain-language "what is a mix network" intro, a break-it-yourself
 learner check, the five failure codes with their explanations, and the parameters the lab runs
 at.
@@ -159,9 +170,10 @@ resistance — all in a single compact format.
 Everything runs client-side. You can build a packet from a message you type, step it hop by
 hop and read the shared secret each mix derives, drive the path length from one to five and
 watch the header refuse to change size, replay a packet into a `REPLAY_DETECTED`, flip
-individual bytes of the header and the payload and compare what happens, and run a mixnet
+individual bytes of the header and the payload and compare what happens, run a mixnet
 under six different traffic configurations while an entropy meter reports what a passive
-observer learns.
+observer learns, and let the last mix count the zero padding to read off the path length —
+then swap the padding for random bytes and watch it lose the count.
 
 ---
 
@@ -183,7 +195,26 @@ corresponding flip on the way out: a low-noise, targeted link between two observ
 one bit. Because the mixes do not authenticate the payload, nothing on the path stops it. The
 answer is not to add a MAC — a MAC the mixes could check would have to be re-computable at every
 hop, which hands the mixes a linking oracle of their own — but to make the mark unrecognisable.
-LIONESS does that. Exhibit 5 lets you perform the attack and watch it fail to produce a signal.
+LIONESS does that. Exhibit 5 lets you perform the attack and watch the flipped bit fail to
+survive as a recognisable bit.
+
+**That is not the same as producing no signal at all.** Kuhn, Beck and Strufe
+(arXiv:1910.13772, §V-A) point out that the destroyed payload is itself the mark: no mix checks
+the payload, so the packet still arrives, and it is the one arrival whose integrity check
+fails. In Sphinx as designed the recipient's address is inside the payload the attack destroys,
+so "the sender can only be linked to the exit node"; where the recipient is the last relay, as
+in HORNET's setup phase, a corrupt recipient "just has to notice that Sphinx's integrity check
+at the receiver failed". Exhibit 7 runs it: three senders, one marked packet, one failed check.
+
+**The last mix learns the path length in the original design.** The fixed-size header hides
+the length from the wire and from the mixes in the middle. It does not hide it from the exit,
+because the innermost block's padding is zeros and the exit sees them once it has decrypted
+its block: the run is (2(r − ν) + 1)·κ bytes long, so counting it gives ν. This lab builds the
+original design by default, because that is the paper it implements, and an earlier version of
+exhibit 3 said the last mix "has no way to tell" padding from filler — which the lab's own
+header code contradicted. Exhibit 7 shows the leak and the fix (random padding, same paper);
+`src/sphinx/pathleak.test.ts` asserts the exit recovers every ν under zero padding, does no
+better than chance under random padding, and that delivery is unaffected.
 
 **Anti-tagging is not integrity, and this lab says which one it chose.** LIONESS is a PRP, not
 an authentication code. It converts targeted modification into unpredictable corruption; it

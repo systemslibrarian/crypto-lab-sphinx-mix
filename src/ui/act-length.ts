@@ -80,7 +80,7 @@ export function renderLength(root: HTMLElement): void {
     card.append(
       el('h3', { text: 'Inside the innermost routing block' }),
       el('p', {
-        text: `The last mix on the path receives a full ${BETA_LEN}-byte block. Only the first ${2 * KAPPA} bytes of it are real — the END marker and the packet identifier. The rest is padding and filler, and the mix has no way to tell which is which.`,
+        text: `The last mix on the path receives a full ${BETA_LEN}-byte block. Only the first ${2 * KAPPA} bytes of it are real — the END marker and the packet identifier. The rest is padding and filler. In original Sphinx, which is what this act builds, the padding is all zeros, so this last mix can see where the zeros stop and work out how many hops the packet took (Kuhn, Beck and Strufe 2019, arXiv:1910.13772). Filling the padding with random bytes closes that leak; act 7 runs both.`,
       })
     );
 

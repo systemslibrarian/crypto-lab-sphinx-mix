@@ -457,6 +457,173 @@ test.describe('the page tells the truth', () => {
     expect(intFrom(verdict, /Header (\d+) bytes/)).toBe(header);
   });
 
+  /**
+   * Act 3 used to say of the last mix's block that "the mix has no way to
+   * tell which is which" (padding from filler). The lab's own header code pads
+   * with zeros, so the last mix can tell exactly, and the length of the run
+   * is the path length (Kuhn, Beck and Strufe, arXiv:1910.13772, §IV-A). The
+   * sentence must not come back, on any act, and the correction must be there.
+   */
+  test('no act denies the padding leak, and act 3 names it', async ({ page }) => {
+    await boot(page);
+    for (const [name, panel] of [
+      [/Build a path/, '#panel-build'],
+      [/Peel/, '#panel-peel'],
+      [/Fixed length/, '#panel-length'],
+      [/Replay/, '#panel-replay'],
+      [/Tagging/, '#panel-tagging'],
+      [/Path length leak/, '#panel-leak'],
+    ] as const) {
+      await openAct(page, name, panel);
+      const text = await page.locator(panel).innerText();
+      expect(text, panel).not.toMatch(/no way to tell/i);
+      expect(text, panel).not.toMatch(/cannot tell (which|where|the padding)/i);
+    }
+    const length = await page.locator('#panel-length').innerText();
+    expect(length).toMatch(/the padding is all zeros/);
+    expect(length).toMatch(/work out how many hops/);
+    expect(length).toContain('arXiv:1910.13772');
+    // The negative-claim box qualifies "hidden path position" the same way.
+    const neg = await page.locator('.callout-neg').innerText();
+    expect(neg).toMatch(/last mix can count its zero padding/);
+  });
+
+  /**
+   * Act 7, zero padding: the path length the page says the exit computed is
+   * RE-DERIVED HERE from the hex dump on screen -- parse the bytes, count the
+   * zeros after byte 2κ, apply the paper's pad length -- and compared with
+   * both the page's printed figure and the path length on the control.
+   */
+  test('zero padding: the exit’s path length is the one on the control, for every length, from the bytes on screen', async ({ page }) => {
+    await boot(page);
+    await openAct(page, /Path length leak/, '#panel-leak');
+    await expect(page.locator('#leak-pad')).toHaveValue('zero');
+    for (let nu = 1; nu <= MAX_HOPS; nu++) {
+      await page.selectOption('#leak-hops', String(nu));
+      await expect(page.locator('#leak-out .hopnode')).toHaveCount(nu);
+      const block = await bytesFromDump(page, '#leak-out .hexblock');
+      expect(block.length).toBe((2 * MAX_HOPS + 1) * KAPPA);
+
+      let run = 0;
+      while (2 * KAPPA + run < block.length && block[2 * KAPPA + run] === 0) run++;
+      // The pad is (2(r − ν) + 1)·κ zero bytes; a coincidental zero at the
+      // head of the filler can lengthen the run, never by a whole block.
+      const blocks = Math.floor(run / KAPPA);
+      expect(blocks % 2, `ν=${nu}: run ${run}`).toBe(1);
+      const derived = MAX_HOPS - (blocks - 1) / 2;
+      expect(derived, `ν=${nu}: run ${run}`).toBe(nu);
+      // END marker: the first κ bytes are zero by definition.
+      expect(block.slice(0, KAPPA).every((b) => b === 0)).toBe(true);
+
+      const kvText = await page.locator('#leak-out .kv').innerText();
+      expect(intFrom(kvText, /Zero run\s*(\d+) bytes, counted from byte 32/)).toBe(run);
+      expect(intFrom(kvText, /Whole blocks\s*(\d+) of 16 bytes/)).toBe(blocks);
+      expect(intFrom(kvText, /Exit computes\s*ν = r − \(blocks − 1\)\/2 = (\d+)/)).toBe(nu);
+      expect(intFrom(kvText, /Sender chose\s*ν = (\d+)/)).toBe(nu);
+      // parts-sum-to-whole: END + I + pad + filler is the routing block.
+      const pad = intFrom(kvText, /Padding\s*(\d+) bytes of zeros/);
+      const filler = intFrom(kvText, /Filler\s*(\d+) bytes/);
+      expect(2 * KAPPA + pad + filler).toBe(block.length);
+      expect(run).toBeGreaterThanOrEqual(pad);
+
+      await expect(page.locator('#leak-out .verdict-alarm')).toContainText(`padding: ${nu}.`);
+      await expect(page.locator('#leak-out .verdict-pass')).toContainText('Delivered');
+    }
+  });
+
+  test('random padding: the run is gone, the page claims no reading, and the packet is still delivered', async ({ page }) => {
+    await boot(page);
+    await openAct(page, /Path length leak/, '#panel-leak');
+    await page.selectOption('#leak-pad', 'random');
+    for (let nu = 1; nu <= MAX_HOPS; nu++) {
+      await page.selectOption('#leak-hops', String(nu));
+      await expect(page.locator('#leak-out .hopnode')).toHaveCount(nu);
+      const block = await bytesFromDump(page, '#leak-out .hexblock');
+      let run = 0;
+      while (2 * KAPPA + run < block.length && block[2 * KAPPA + run] === 0) run++;
+      // κ consecutive zero bytes of random pad is a 2^-128 event.
+      expect(run, `ν=${nu}`).toBeLessThan(KAPPA);
+      const kvText = await page.locator('#leak-out .kv').innerText();
+      expect(intFrom(kvText, /Zero run\s*(\d+) bytes, counted from byte 32/)).toBe(run);
+      expect(kvText).toMatch(/Exit computes\s*no run to read/);
+      expect(kvText).toMatch(/Padding\s*\d+ bytes of random bytes/);
+      await expect(page.locator('#leak-out .verdict-alarm')).toHaveCount(0);
+      await expect(page.locator('#leak-out .verdict-pass').first()).toContainText('Delivered');
+      await expect(page.locator('#leak-out .verdict-pass').last()).toContainText('No run to count');
+    }
+    // Retirement: back to zeros and the alarm returns for the length on screen.
+    await page.selectOption('#leak-pad', 'zero');
+    await expect(page.locator('#leak-out .verdict-alarm')).toContainText(`padding: ${MAX_HOPS}.`);
+  });
+
+  test('many packets: every length recovered under zero padding, chance under random, all delivered', async ({ page }) => {
+    await boot(page);
+    await openAct(page, /Path length leak/, '#panel-leak');
+    await page.getByRole('button', { name: /Run \d+ packets in each mode/ }).click();
+    await expect(page.locator('#leak-trials-table')).toBeVisible({ timeout: 120_000 });
+
+    const rows = await page.locator('#leak-trials-table tbody tr').allInnerTexts();
+    expect(rows).toHaveLength(MAX_HOPS + 1);
+    let zeroSum = 0;
+    let randomSum = 0;
+    let perRow = 0;
+    for (let i = 0; i < MAX_HOPS; i++) {
+      const m = /(\d+) of (\d+)\s+(\d+) of (\d+)/.exec(rows[i]!);
+      expect(m, rows[i]).not.toBeNull();
+      perRow = Number(m![2]);
+      expect(Number(m![4])).toBe(perRow);
+      // Zero padding: the exit is right on every single packet.
+      expect(Number(m![1]), `row ${i + 1}`).toBe(perRow);
+      zeroSum += Number(m![1]);
+      randomSum += Number(m![3]);
+    }
+    const total = perRow * MAX_HOPS;
+    // parts-sum-to-whole: the totals row is the sum of the rows above it.
+    const totals = /(\d+) of (\d+)\s+(\d+) of (\d+)/.exec(rows[MAX_HOPS]!)!;
+    expect(Number(totals[1])).toBe(zeroSum);
+    expect(Number(totals[3])).toBe(randomSum);
+    expect(Number(totals[2])).toBe(total);
+    expect(Number(totals[4])).toBe(total);
+
+    // Chance is 1/r. Five binomial standard deviations either side: a real
+    // leak (rate 1.0) is twenty sigma out, a fair guess stays in > 0.999999.
+    const p = 1 / MAX_HOPS;
+    const sigma = Math.sqrt(total * p * (1 - p));
+    expect(randomSum).toBeGreaterThan(total * p - 5 * sigma);
+    expect(randomSum).toBeLessThan(total * p + 5 * sigma);
+
+    const kvText = await page.locator('#leak-trials-out .kv').innerText();
+    expect(intFrom(kvText, /Delivered, zeros\s*(\d+) of/)).toBe(total);
+    expect(intFrom(kvText, /Delivered, random\s*(\d+) of/)).toBe(total);
+    expect(floatFrom(kvText, /Recovered, random\s*\d+ of \d+ \(([\d.]+)%\)/)).toBeCloseTo(
+      (randomSum / total) * 100,
+      1
+    );
+    expect(floatFrom(kvText, /guess\s*expects ([\d.]+) of/)).toBeCloseTo(total * p, 1);
+    expect(floatFrom(kvText, /standard deviation ([\d.]+)/)).toBeCloseTo(sigma, 2);
+  });
+
+  test('a marked payload: exactly one arrival fails its check and it is the sender on the control', async ({ page }) => {
+    await boot(page);
+    await openAct(page, /Path length leak/, '#panel-leak');
+    for (const sender of ['Sender 3', 'Sender 1']) {
+      await page.selectOption('#leak-tag-sender', sender);
+      await page.getByRole('button', { name: 'Mark it and deliver all three' }).click();
+      await expect(page.locator('#leak-tag-out .verdict-alarm')).toContainText(`it is ${sender}’s`);
+      const rows = await page.locator('#leak-tag-table tbody tr').allInnerTexts();
+      expect(rows).toHaveLength(3);
+      const failed = rows.filter((r) => /FAILED/.test(r));
+      const marked = rows.filter((r) => /yes — 1 bit/.test(r));
+      expect(failed).toHaveLength(1);
+      expect(marked).toHaveLength(1);
+      expect(failed[0]).toBe(marked[0]);
+      expect(failed[0]).toContain(sender);
+      // No mix noticed: every row, the marked one included, verified all 3 MACs.
+      for (const r of rows) expect(r).toMatch(/all 3/);
+      expect(rows.filter((r) => /passed/.test(r))).toHaveLength(2);
+    }
+  });
+
   test('a closed disclosure really is hidden — the [hidden] cascade probe', async ({ page }) => {
     await boot(page);
     // A class rule setting `display` outranks the UA `[hidden]` rule, so an

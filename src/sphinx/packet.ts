@@ -8,7 +8,13 @@
  * derived once, used for four different jobs.
  */
 import { PACKET_LEN, PAYLOAD_LEN } from './params';
-import { createHeader, type HeaderBuild, type NodeRef, type SphinxHeader } from './header';
+import {
+  createHeader,
+  type HeaderBuild,
+  type HeaderOptions,
+  type NodeRef,
+  type SphinxHeader,
+} from './header';
 import { hPi } from './kdf';
 import { lionessEncrypt } from './lioness';
 import { padMessage } from './payload';
@@ -32,9 +38,10 @@ export interface PacketBuild {
 export function createPacket(
   path: NodeRef[],
   message: Uint8Array,
-  identifier: Uint8Array
+  identifier: Uint8Array,
+  options: HeaderOptions = {}
 ): PacketBuild {
-  const build = createHeader(path, identifier);
+  const build = createHeader(path, identifier, options);
   const plaintext = padMessage(message);
 
   // delta_{nu-1} = pi(h_pi(s_{nu-1}), plaintext), then wrap outward.
