@@ -66,8 +66,8 @@ export function renderLeak(root: HTMLElement): void {
   });
   const padSelect = el('select', { id: 'leak-pad' }) as HTMLSelectElement;
   padSelect.append(
-    el('option', { value: 'zero', text: 'Zeros — original Sphinx', selected: true }),
-    el('option', { value: 'random', text: 'Random bytes — the paper’s fix' })
+    el('option', { value: 'zero', text: 'Zeros (original Sphinx)', selected: true }),
+    el('option', { value: 'random', text: 'Random bytes (the fix)' })
   );
   padSelect.addEventListener('change', () => {
     pad = padSelect.value as TailPad;
